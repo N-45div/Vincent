@@ -6,7 +6,7 @@
 [![Chainlink CRE](https://img.shields.io/badge/Chainlink-CRE-375BD2?logo=chainlink)](https://docs.chain.link/cre)
 [![x402 Protocol](https://img.shields.io/badge/x402-Protocol-8B5CF6)](https://x402.org)
 
-> **Submission for [Convergence: A Chainlink Hackathon](https://hack.chain.link) — AI Agents Track**
+> **Submission for [Convergence: A Chainlink Hackathon](https://hack.chain.link) — CRE & AI Track**
 
 ---
 
@@ -212,4 +212,4 @@ MIT
 
 ---
 
-**Built for [Convergence: A Chainlink Hackathon](https://hack.chain.link) — AI Agents Track**
+**Built for [Convergence: A Chainlink Hackathon](https://hack.chain.link) — CRE & AI Track**
