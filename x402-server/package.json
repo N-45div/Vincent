@@ -1,0 +1,21 @@
+{
+  "name": "signal-attestor-x402",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "node index.js"
+  },
+  "dependencies": {
+    "@payai/facilitator": "latest",
+    "@supabase/supabase-js": "^2.45.0",
+    "@x402/core": "latest",
+    "@x402/evm": "latest",
+    "@x402/fetch": "latest",
+    "@x402/express": "latest",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "viem": "^2.31.0"
+  }
+}
