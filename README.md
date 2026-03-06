@@ -90,6 +90,7 @@ sequenceDiagram
 | **Pay-Per-Request** | $0.01 USDC per API call—no subscriptions, no API keys |
 | **Autonomous Agent** | Python agent using LangChain that pays and consumes signals automatically |
 | **Live Dashboard** | React frontend with TradingView charts, signal history, and agent activity monitor |
+| **World ID Gating** | Proof-of-personhood gate via World ID before x402 signal access |
 
 ---
 
@@ -159,6 +160,11 @@ vincent/
 ### Run All Services
 
 ```bash
+# 0. Configure env
+# - x402-server/.env: add WORLD_ID_APP_ID
+# - frontend/.env: add VITE_WORLD_ID_APP_ID
+# - agent/.env: add WORLD_ID_ADMIN_SECRET to auto-fetch latest token
+
 # 1. CRE Workflow (generates signals every 30s)
 cd signal-attestator
 cre workflow simulate ./signal-attestator -T staging-settings
@@ -172,6 +178,23 @@ cd agent && ./run.sh
 # 4. Frontend (dashboard on :5173)
 cd frontend && npm install && npm run dev
 ```
+
+---
+
+## World ID + CRE Track Integration
+
+Vincent participates in the **World ID + CRE sponsor track** by enforcing **proof-of-personhood** before
+any paid signal access.
+
+**Flow:**
+1. User verifies with **World ID (IDKit)** in the frontend.
+2. The frontend posts proof to **/api/world-id/verify**.
+3. The x402 server verifies proof off-chain (World ID API) and issues a short-lived token.
+4. Requests to **/api/signals** or **/api/paid-demo** must include `x-world-id-token`.
+5. The agent can auto-fetch the latest token from **/api/world-id/token** using a shared admin secret.
+
+This demonstrates World ID verification off-chain within CRE-connected infrastructure, enabling access on
+chains where World ID is not natively available.
 
 ---
 
@@ -196,6 +219,23 @@ cd frontend && npm install && npm run dev
 | **Database** | Supabase (PostgreSQL) |
 
 ---
+
+## Links
+
+- **Hackathon:** [hack.chain.link](https://hack.chain.link)
+- **CRE Docs:** [docs.chain.link/cre](https://docs.chain.link/cre)
+- **x402 Protocol:** [x402.org](https://x402.org)
+- **Architecture:** [ARCHITECTURE.md](./ARCHITECTURE.md)
+
+---
+
+## License
+
+MIT
+
+---
+
+**Built for [Convergence: A Chainlink Hackathon](https://hack.chain.link) — CRE & AI Track**
 
 ## Links
 
