@@ -38,6 +38,7 @@ contracts/broadcast/
 
 # CRE
 .cre/
+.cre_build_tmp.js
 
 # Testing
 coverage/
