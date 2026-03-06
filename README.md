@@ -1,289 +1,215 @@
-# Vincent - Autonomous AI Trading Agent with x402 Payments
+# Vincent
 
+**Autonomous AI Trading Signals powered by Chainlink CRE + x402 Payments**
+
+[![Convergence Hackathon](https://img.shields.io/badge/Convergence-Hackathon-375BD2?logo=chainlink)](https://hack.chain.link)
 [![Chainlink CRE](https://img.shields.io/badge/Chainlink-CRE-375BD2?logo=chainlink)](https://docs.chain.link/cre)
 [![x402 Protocol](https://img.shields.io/badge/x402-Protocol-8B5CF6)](https://x402.org)
-[![Ethereum Sepolia](https://img.shields.io/badge/Ethereum-Sepolia-627EEA?logo=ethereum)](https://sepolia.etherscan.io)
-[![Base Sepolia](https://img.shields.io/badge/Base-Sepolia-0052FF?logo=coinbase)](https://base.org)
 
-> **Chainlink CRE & AI Hackathon Submission**  
-> Autonomous AI agents consuming CRE workflows with x402 payments
+> **Submission for [Convergence: A Chainlink Hackathon](https://hack.chain.link) — AI Agents Track**
 
-Vincent is a fully autonomous AI trading signal system that demonstrates the future of machine-to-machine commerce. It combines Chainlink's Compute Runtime Environment (CRE) for trustless signal generation with the x402 payment protocol for instant, permissionless API monetization.
+---
 
-## 🎯 Hackathon Use Case
+## What is Vincent?
 
-**"AI agents consuming CRE workflows with x402 payments"**
+Vincent is an **autonomous AI trading signal system** that demonstrates real-world machine-to-machine commerce. An AI agent independently discovers, pays for, and consumes trading signals—all without human intervention.
 
-This project showcases how AI agents can:
-1. **Discover** payment requirements via HTTP 402
-2. **Pay** autonomously using USDC on Base Sepolia
-3. **Consume** CRE-generated trading signals
-4. **Act** on signals with AI-powered decision making
+### The Problem
 
-No API keys. No subscriptions. Just autonomous, pay-per-request AI commerce.
+Traditional API monetization requires:
+- API keys and account management
+- Subscription billing and invoicing
+- Manual integration for each consumer
+- No support for autonomous AI agents
 
-## 🏗️ Architecture
+### The Solution
+
+Vincent combines two powerful technologies:
+
+| Technology | Role |
+|------------|------|
+| **Chainlink CRE** | Generates verifiable trading signals using off-chain data (prices, sentiment) with on-chain attestation |
+| **x402 Protocol** | Enables instant, permissionless pay-per-request API access using USDC |
+
+**Result:** AI agents can autonomously discover, pay for, and consume CRE-generated data—no API keys, no subscriptions, no human intervention.
+
+---
+
+## How It Works
 
 ```mermaid
-flowchart TB
-    subgraph External["External Data Sources"]
-        CG[CoinGecko API]
-        LC[LunarCrush API]
-        OR[OpenRouter GPT-4o]
-    end
+sequenceDiagram
+    participant CRE as Chainlink CRE
+    participant API as x402 Signal API
+    participant Agent as Vincent Agent
+    participant Chain as Blockchain
 
-    subgraph CRE["Chainlink CRE Workflow"]
-        FP[Fetch Price & Sentiment]
-        AI[AI Decision Engine]
-        AT[Attest On-Chain]
-        FP --> AI --> AT
-    end
-
-    subgraph Storage["Data Layer"]
-        SB[(Supabase)]
-        ETH[Ethereum Sepolia<br/>SignalRegistry]
-    end
-
-    subgraph X402["x402 Payment Layer"]
-        MW[402 Paywall]
-        PAY[PayAI Facilitator]
-        USDC[EIP-3009 USDC]
-        MW --> PAY --> USDC
-    end
-
-    subgraph Consumers["Signal Consumers"]
-        AG[Vincent Agent<br/>LangChain + Auto-Pay]
-        FE[Frontend Dashboard<br/>React + Charts]
-    end
-
-    CG --> FP
-    LC --> FP
-    OR --> AI
-    AT --> SB
-    AT --> ETH
-    SB --> MW
-    MW --> AG
-    MW --> FE
-    SB --> FE
-    ETH --> FE
+    CRE->>Chain: Attest signal (Eth Sepolia)
+    CRE->>API: Store signal data
+    Agent->>API: GET /api/signals
+    API-->>Agent: 402 Payment Required
+    Agent->>Agent: Sign EIP-3009 USDC auth
+    Agent->>API: Retry with X-PAYMENT header
+    API->>Chain: Settle payment (Base Sepolia)
+    API-->>Agent: 200 OK + signals
+    Agent->>Agent: Analyze & decide
 ```
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed diagrams.
+### Key Flows
 
-## 📁 Project Structure
+**1. Signal Generation (CRE Workflow)**
+- Fetches real-time prices from CoinGecko
+- Fetches social sentiment from LunarCrush  
+- AI (GPT-4o via OpenRouter) analyzes data and generates BUY/SELL/HOLD signal
+- Signal attested on-chain (Ethereum Sepolia) with data hash for verification
+- Signal stored in Supabase for API access
+
+**2. Signal Monetization (x402)**
+- API protected by x402 payment middleware
+- Returns HTTP 402 with payment requirements
+- Accepts EIP-3009 USDC authorization signatures
+- PayAI facilitator settles payment on Base Sepolia
+- Signal data returned after successful payment
+
+**3. Autonomous Consumption (AI Agent)**
+- LangChain agent with custom tools
+- Automatically detects 402 responses
+- Signs and submits USDC payment
+- Analyzes received signals
+- Records trading decisions
+
+---
+
+## Product Features
+
+| Feature | Description |
+|---------|-------------|
+| **Multi-Asset Signals** | BTC, ETH, SOL with real-time price and sentiment data |
+| **AI-Powered Decisions** | GPT-4o analyzes market conditions and generates signals with confidence scores |
+| **On-Chain Verification** | Every signal attested on Ethereum Sepolia with verifiable data hash |
+| **Pay-Per-Request** | $0.01 USDC per API call—no subscriptions, no API keys |
+| **Autonomous Agent** | Python agent using LangChain that pays and consumes signals automatically |
+| **Live Dashboard** | React frontend with TradingView charts, signal history, and agent activity monitor |
+
+---
+
+## Chainlink CRE Integration
+
+Vincent uses Chainlink's Compute Runtime Environment (CRE) to create a **trustless signal generation pipeline**:
+
+```typescript
+// CRE Workflow: signal-attestator/signal-attestator/main.ts
+
+// 1. Fetch external data
+const price = await httpClient.get(coingeckoUrl);
+const sentiment = await httpClient.get(lunarcrushUrl);
+
+// 2. AI decision
+const signal = await httpClient.post(openrouterUrl, {
+  messages: [{ role: "user", content: analysisPrompt }]
+});
+
+// 3. On-chain attestation
+await evmClient.call(signalRegistry, "attest", [
+  asset, signal, confidence, dataHash, price, sentiment
+]);
+
+// 4. Off-chain storage
+await httpClient.post(supabaseUrl, signalData);
+```
+
+**Why CRE?**
+- Runs on Chainlink's battle-tested node infrastructure
+- Deterministic execution with verifiable outputs
+- Native support for HTTP calls, EVM transactions, and cross-chain operations
+- Production-ready for institutional use cases
+
+---
+
+## Project Structure
 
 ```
 vincent/
 ├── signal-attestator/          # Chainlink CRE Workflow
-│   ├── signal-attestator/
-│   │   ├── main.ts             # Workflow logic
-│   │   ├── config.staging.json # Staging config
-│   │   └── workflow.yaml       # CRE settings
-│   ├── secrets.yaml            # Secret references
-│   └── project.yaml            # CRE project config
-│
-├── x402-server/                # x402 Payment Server
-│   ├── index.js                # Express + x402 middleware
-│   ├── package.json            # Dependencies
-│   └── .env.example            # Environment template
-│
+│   └── signal-attestator/
+│       ├── main.ts             # Core workflow logic
+│       ├── config.staging.json # Multi-asset config
+│       └── workflow.yaml       # CRE deployment settings
+├── x402-server/                # Payment Gateway
+│   └── index.js                # Express + x402 + PayAI
 ├── agent/                      # Autonomous AI Agent
 │   ├── agent.py                # LangChain/LangGraph agent
-│   ├── x402_client.py          # Python x402 client
-│   ├── requirements.txt        # Python dependencies
 │   └── run.sh                  # Launch script
-│
 ├── frontend/                   # React Dashboard
-│   ├── src/
-│   │   ├── App.tsx             # Main dashboard
-│   │   └── components/         # UI components
-│   ├── package.json            # Dependencies
-│   └── index.html              # Entry point
-│
+│   └── src/App.tsx             # Live signals + charts
 ├── contracts/                  # Smart Contracts
 │   └── src/SignalRegistry.sol  # On-chain attestation
-│
-├── ARCHITECTURE.md             # Mermaid diagrams
-└── README.md                   # This file
+└── ARCHITECTURE.md             # Detailed diagrams
 ```
 
-## 🚀 Quick Start
+---
+
+## Quick Start
 
 ### Prerequisites
 
-- [Chainlink CRE CLI](https://docs.chain.link/cre) (`cre` command)
-- Node.js 18+
-- Python 3.10+
-- pnpm or npm
+- [Chainlink CRE CLI](https://docs.chain.link/cre)
+- Node.js 18+ / Python 3.10+
 
-### 1. Clone & Setup
+### Run All Services
 
 ```bash
-git clone https://github.com/your-repo/vincent.git
-cd vincent
-```
-
-### 2. Configure Environment
-
-```bash
-# Signal Attestator secrets
-cp signal-attestator/.env.example signal-attestator/.env
-# Add: OPENROUTER_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_KEY
-
-# x402 Server
-cp x402-server/.env.example x402-server/.env
-# Add: SUPABASE_URL, SUPABASE_SERVICE_KEY, X402_RECEIVER_ADDRESS, X402_PAYER_PRIVATE_KEY
-
-# Agent
-cp agent/.env.example agent/.env
-# Add: OPENROUTER_API_KEY, PAYER_PRIVATE_KEY
-
-# Frontend
-cp frontend/.env.example frontend/.env
-# Add: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
-```
-
-### 3. Start Services
-
-**Terminal 1: CRE Workflow (Signal Generation)**
-```bash
+# 1. CRE Workflow (generates signals every 30s)
 cd signal-attestator
-while true; do cre workflow simulate ./signal-attestator -T staging-settings; sleep 30; done
+cre workflow simulate ./signal-attestator -T staging-settings
+
+# 2. x402 Server (payment gateway on :4021)
+cd x402-server && npm install && node index.js
+
+# 3. AI Agent (autonomous consumer)
+cd agent && ./run.sh
+
+# 4. Frontend (dashboard on :5173)
+cd frontend && npm install && npm run dev
 ```
 
-**Terminal 2: x402 Server (Payment Gateway)**
-```bash
-cd x402-server
-npm install
-node index.js
-```
+---
 
-**Terminal 3: Autonomous Agent**
-```bash
-cd agent
-./run.sh
-```
+## Deployed Contracts
 
-**Terminal 4: Frontend Dashboard**
-```bash
-cd frontend
-npm install
-npm run dev
-```
+| Contract | Network | Address |
+|----------|---------|---------|
+| SignalRegistry | Ethereum Sepolia | `0x0Fa25f00e71CE8E8BaD5E8E89d6b9C7882D2C923` |
+| USDC (x402) | Base Sepolia | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
 
-### 4. View Dashboard
+---
 
-Open http://localhost:5173 to see:
-- Live trading signals for BTC, ETH, SOL
-- Price charts with TradingView Lightweight Charts
-- Agent activity monitor
-- On-chain verification status
+## Tech Stack
 
-## 🔧 Key Components
+| Layer | Technology |
+|-------|------------|
+| **Workflow** | Chainlink CRE, TypeScript |
+| **On-Chain** | Ethereum Sepolia, Foundry, Viem |
+| **Payments** | x402 Protocol, EIP-3009, PayAI Facilitator, Base Sepolia USDC |
+| **AI** | OpenRouter (GPT-4o), LangChain, LangGraph |
+| **Frontend** | React 19, TailwindCSS 4, TradingView Lightweight Charts |
+| **Database** | Supabase (PostgreSQL) |
 
-### Chainlink CRE Workflow
+---
 
-The signal attestator workflow runs on Chainlink's Compute Runtime Environment:
+## Links
 
-```typescript
-// Fetches price from CoinGecko
-const price = await fetchPrice(asset);
+- **Hackathon:** [hack.chain.link](https://hack.chain.link)
+- **CRE Docs:** [docs.chain.link/cre](https://docs.chain.link/cre)
+- **x402 Protocol:** [x402.org](https://x402.org)
+- **Architecture:** [ARCHITECTURE.md](./ARCHITECTURE.md)
 
-// Fetches sentiment from LunarCrush
-const sentiment = await fetchSentiment(asset);
+---
 
-// AI decision via OpenRouter
-const decision = await callOpenRouter(price, sentiment);
-
-// Attest on-chain
-await submitToChain(decision);
-
-// Store in Supabase
-await submitToSupabase(decision);
-```
-
-### x402 Payment Protocol
-
-The x402 server protects signal access with pay-per-request:
-
-```javascript
-// Payment middleware configuration
-app.use(paymentMiddleware({
-  "GET /api/signals": {
-    accepts: [{
-      scheme: "exact",
-      price: "$0.01",
-      network: "eip155:84532",  // Base Sepolia
-      payTo: receiverAddress,
-    }],
-  },
-}, resourceServer));
-```
-
-### Autonomous Agent
-
-The Python agent uses LangChain with custom tools:
-
-```python
-@tool
-def fetch_signals_with_payment():
-    """Fetch signals via x402 payment using EIP-3009 USDC authorization"""
-    # Automatic 402 detection → payment → retry
-    response = httpx.get(paid_demo_url)
-    return response.json()
-
-@tool
-def record_trading_decision(asset, action, reasoning):
-    """Record AI trading decision"""
-    agent_state.record_decision(asset, action, reasoning)
-```
-
-## 💰 Payment Flow
-
-```
-1. Agent requests /api/signals
-2. Server returns HTTP 402 with payment requirements
-3. Agent signs EIP-3009 USDC authorization
-4. PayAI facilitator verifies & settles on Base Sepolia
-5. Server returns signals
-6. Agent analyzes & makes trading decisions
-```
-
-**Cost:** $0.01 USDC per signal fetch
-
-## 🔗 Links
-
-| Component | Technology | Documentation |
-|-----------|------------|---------------|
-| CRE Workflow | Chainlink CRE | [docs.chain.link/cre](https://docs.chain.link/cre) |
-| Payments | x402 Protocol | [x402.org](https://x402.org) |
-| Facilitator | PayAI | [docs.payai.network](https://docs.payai.network) |
-| AI Agent | LangChain | [langchain.com](https://langchain.com) |
-| Charts | Lightweight Charts | [tradingview.github.io/lightweight-charts](https://tradingview.github.io/lightweight-charts) |
-
-## 📊 Tech Stack
-
-- **Blockchain:** Ethereum Sepolia (SignalRegistry), Base Sepolia (x402 USDC), Foundry, Viem
-- **Backend:** Chainlink CRE, Node.js, Express
-- **Payments:** x402, EIP-3009, USDC, PayAI
-- **AI:** OpenRouter (GPT-4o), LangChain, LangGraph
-- **Frontend:** React 19, TailwindCSS 4, Lightweight Charts
-- **Database:** Supabase (PostgreSQL)
-
-## 🏆 Hackathon Criteria
-
-| Criteria | Implementation |
-|----------|----------------|
-| ✅ Uses Chainlink CRE | Signal attestation workflow with on-chain verification |
-| ✅ AI Agent Integration | LangChain agent with autonomous decision making |
-| ✅ x402 Payments | Pay-per-request signal API with PayAI facilitator |
-| ✅ Real USDC | EIP-3009 gasless transfers on Base Sepolia |
-| ✅ End-to-End Demo | CRE → x402 → Agent → Dashboard |
-
-## 📜 License
+## License
 
 MIT
 
 ---
 
-Built with 🤖 for the Chainlink CRE & AI Hackathon
+**Built for [Convergence: A Chainlink Hackathon](https://hack.chain.link) — AI Agents Track**
