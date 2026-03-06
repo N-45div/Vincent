@@ -27,7 +27,11 @@ export function AgentActivity() {
     // Check if agent is running by pinging the server
     const checkAgent = async () => {
       try {
-        const res = await fetch('http://localhost:4021/api/signals', { method: 'HEAD' })
+        const token = localStorage.getItem('worldIdToken')
+        const res = await fetch('http://localhost:4021/api/signals', {
+          method: 'HEAD',
+          headers: token ? { 'x-world-id-token': token } : undefined,
+        })
         setIsConnected(res.status === 402 || res.status === 200)
         setLastPing(new Date().toLocaleTimeString())
       } catch {

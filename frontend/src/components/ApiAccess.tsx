@@ -12,9 +12,9 @@ export function ApiAccess() {
   } | null>(null)
   const [paidResult, setPaidResult] = useState<{
     status: number
-    payment: unknown
+    payment: Record<string, unknown> | null
     paymentError?: string | null
-    body: unknown
+    body: Record<string, unknown> | null
   } | null>(null)
   const [probeLoading, setProbeLoading] = useState(false)
   const [paidLoading, setPaidLoading] = useState(false)
@@ -35,7 +35,11 @@ export function ApiAccess() {
     setProbeError(null)
 
     try {
-      const response = await fetch(apiUrl, { method: 'GET' })
+      const token = localStorage.getItem('worldIdToken')
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: token ? { 'x-world-id-token': token } : undefined,
+      })
       setProbe({
         status: response.status,
         statusText: response.statusText,
@@ -56,7 +60,11 @@ export function ApiAccess() {
     setPaidError(null)
 
     try {
-      const response = await fetch(paidUrl, { method: 'GET' })
+      const token = localStorage.getItem('worldIdToken')
+      const response = await fetch(paidUrl, {
+        method: 'GET',
+        headers: token ? { 'x-world-id-token': token } : undefined,
+      })
       const data = await response.json().catch(() => null)
 
       if (!response.ok) {
