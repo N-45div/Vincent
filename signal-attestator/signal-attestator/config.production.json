@@ -1,0 +1,27 @@
+{
+  "schedule": "*/30 * * * * *",
+  "assets": [
+    {
+      "symbol": "BTC",
+      "priceApiUrl": "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
+    },
+    {
+      "symbol": "ETH",
+      "priceApiUrl": "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
+    },
+    {
+      "symbol": "SOL",
+      "priceApiUrl": "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd"
+    }
+  ],
+  "sentimentApiUrl": "https://api.alternative.me/fng/?limit=1",
+  "openrouterUrl": "https://openrouter.ai/api/v1/chat/completions",
+  "openrouterModel": "openai/gpt-4o",
+  "evms": [
+    {
+      "chainName": "ethereum-testnet-sepolia",
+      "receiverAddress": "0x0Fa25f00e71CE8E8BaD5E8E89d6b9C7882D2C923",
+      "gasLimit": "1000000"
+    }
+  ]
+}
