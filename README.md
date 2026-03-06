@@ -2,6 +2,7 @@
 
 [![Chainlink CRE](https://img.shields.io/badge/Chainlink-CRE-375BD2?logo=chainlink)](https://docs.chain.link/cre)
 [![x402 Protocol](https://img.shields.io/badge/x402-Protocol-8B5CF6)](https://x402.org)
+[![Ethereum Sepolia](https://img.shields.io/badge/Ethereum-Sepolia-627EEA?logo=ethereum)](https://sepolia.etherscan.io)
 [![Base Sepolia](https://img.shields.io/badge/Base-Sepolia-0052FF?logo=coinbase)](https://base.org)
 
 > **Chainlink CRE & AI Hackathon Submission**  
@@ -40,7 +41,7 @@ flowchart TB
 
     subgraph Storage["Data Layer"]
         SB[(Supabase)]
-        BC[Base Sepolia]
+        ETH[Ethereum Sepolia<br/>SignalRegistry]
     end
 
     subgraph X402["x402 Payment Layer"]
@@ -59,12 +60,12 @@ flowchart TB
     LC --> FP
     OR --> AI
     AT --> SB
-    AT --> BC
+    AT --> ETH
     SB --> MW
     MW --> AG
     MW --> FE
     SB --> FE
-    BC --> FE
+    ETH --> FE
 ```
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed diagrams.
@@ -262,7 +263,7 @@ def record_trading_decision(asset, action, reasoning):
 
 ## 📊 Tech Stack
 
-- **Blockchain:** Base Sepolia, Foundry, Viem
+- **Blockchain:** Ethereum Sepolia (SignalRegistry), Base Sepolia (x402 USDC), Foundry, Viem
 - **Backend:** Chainlink CRE, Node.js, Express
 - **Payments:** x402, EIP-3009, USDC, PayAI
 - **AI:** OpenRouter (GPT-4o), LangChain, LangGraph

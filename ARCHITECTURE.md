@@ -26,7 +26,7 @@ flowchart TB
 
     subgraph Storage["Data Layer"]
         SB[(Supabase)]
-        BC[Base Sepolia]
+        ETH[Ethereum Sepolia]
     end
 
     subgraph X402["x402 Payment Layer"]
@@ -44,14 +44,14 @@ flowchart TB
     LC --> FS
     OR --> AI
     AT --> SB
-    AT --> BC
+    AT --> ETH
     SB --> MW
     MW --> PAY
     PAY --> USDC
     MW --> AG
     MW --> FE
     SB --> FE
-    BC --> FE
+    ETH --> FE
 ```
 
 ## CRE Workflow Detail
@@ -64,7 +64,7 @@ sequenceDiagram
     participant LC as LunarCrush
     participant OR as OpenRouter
     participant SB as Supabase
-    participant BC as Base Sepolia
+    participant ETH as Ethereum Sepolia
 
     Cron->>CRE: Trigger (every 30s)
     
@@ -82,7 +82,7 @@ sequenceDiagram
     par Store Results
         CRE->>SB: INSERT signals
         CRE->>SB: INSERT price_ticks
-        CRE->>BC: SignalRegistry.attest()
+        CRE->>ETH: SignalRegistry.attest()
     end
 
     CRE-->>Cron: "Signals attested: BTC, ETH, SOL"
@@ -343,6 +343,9 @@ flowchart TB
 
     subgraph BaseSepolia["Base Sepolia (Chain ID: 84532)"]
         USDC[USDC Contract<br/>0x036CbD53842c5426634e7929541eC2318f3dCF7e]
+    end
+
+    subgraph EthSepolia["Ethereum Sepolia (Chain ID: 11155111)"]
         SR[SignalRegistry<br/>0x0Fa25f00e71CE8E8BaD5E8E89d6b9C7882D2C923]
     end
 
@@ -381,7 +384,7 @@ flowchart TB
 | Contract | Network | Address |
 |----------|---------|---------|
 | USDC | Base Sepolia | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
-| SignalRegistry | Base Sepolia | `0x0Fa25f00e71CE8E8BaD5E8E89d6b9C7882D2C923` |
+| SignalRegistry | Ethereum Sepolia | `0x0Fa25f00e71CE8E8BaD5E8E89d6b9C7882D2C923` |
 
 ## Key Endpoints
 
