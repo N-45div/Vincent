@@ -8,6 +8,7 @@ import { MetricsPanel } from './components/MetricsPanel'
 import { PriceChart } from './components/PriceChart'
 import { ChainVerification } from './components/ChainVerification'
 import { AgentActivity } from './components/AgentActivity'
+import { WorldIdGate } from './components/WorldIdGate'
 
 const ASSETS = ['BTC', 'ETH', 'SOL']
 
@@ -109,6 +110,7 @@ function App() {
       <Header />
 
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        <WorldIdGate />
         <section className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Live Signals</h2>
