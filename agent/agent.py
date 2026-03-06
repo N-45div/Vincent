@@ -35,6 +35,9 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o")
 X402_SIGNAL_URL = os.getenv("X402_SIGNAL_URL", "http://localhost:4021/api/signals")
 PAYER_PRIVATE_KEY = os.getenv("PAYER_PRIVATE_KEY")
+WORLD_ID_TOKEN = os.getenv("WORLD_ID_TOKEN")
+WORLD_ID_TOKEN_URL = os.getenv("WORLD_ID_TOKEN_URL", "http://localhost:4021/api/world-id/token")
+WORLD_ID_ADMIN_SECRET = os.getenv("WORLD_ID_ADMIN_SECRET")
 AGENT_INTERVAL = int(os.getenv("AGENT_INTERVAL", "60"))
 
 
@@ -67,6 +70,32 @@ class AgentState:
 
 
 agent_state = AgentState()
+world_id_cache = {"token": WORLD_ID_TOKEN, "expiresAt": None}
+
+
+def get_world_id_token() -> Optional[str]:
+    token = world_id_cache.get("token")
+    expires_at = world_id_cache.get("expiresAt")
+    if token and (expires_at is None or expires_at > int(time.time() * 1000) + 10000):
+        return token
+
+    if not WORLD_ID_TOKEN_URL:
+        return token
+
+    try:
+        import httpx
+
+        headers = {"x-world-id-admin": WORLD_ID_ADMIN_SECRET} if WORLD_ID_ADMIN_SECRET else None
+        response = httpx.get(WORLD_ID_TOKEN_URL, headers=headers, timeout=10.0)
+        data = response.json() if response.status_code == 200 else None
+        if data and data.get("token"):
+            world_id_cache["token"] = data["token"]
+            world_id_cache["expiresAt"] = data.get("expiresAt")
+            return data["token"]
+    except Exception:
+        return token
+
+    return token
 
 
 # ============================================================================
@@ -89,15 +118,17 @@ def fetch_signals_with_payment() -> str:
     global agent_state
     
     import httpx
-    
+
     # Use the paid-demo endpoint which handles x402 payment via official client
     paid_url = X402_SIGNAL_URL.replace("/api/signals", "/api/paid-demo")
-    
+    world_id_token = get_world_id_token()
+
     console.print("[yellow]🔐 Fetching signals via x402 payment...[/yellow]")
-    
+
     try:
         with httpx.Client(timeout=60.0) as http:
-            response = http.get(paid_url)
+            headers = {"x-world-id-token": world_id_token} if world_id_token else None
+            response = http.get(paid_url, headers=headers)
             data = response.json()
     except Exception as e:
         console.print(f"[red]❌ Connection error: {e}[/red]")
