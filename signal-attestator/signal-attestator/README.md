@@ -1,27 +1,59 @@
-# Hello World (TypeScript)
+# Vincent Signal Attestator — CRE Workflow
 
-This template provides a blank TypeScript workflow example. It aims to give a starting point for writing a workflow from scratch and to get started with local simulation.
+This Chainlink CRE workflow powers the Vincent signal pipeline. It fetches market data, generates AI-driven trading signals, and attests them on-chain.
 
-Steps to run the example
+## What it does
 
-## 1. Update .env file
+1. **Fetches market data** — Pulls price data from external APIs
+2. **Generates signal** — Calls an LLM (via OpenRouter) to analyze data and output BUY/SELL/HOLD with confidence
+3. **Attests on-chain** — Writes the signal to Base Sepolia with cryptographic proof
+4. **Stores in Supabase** — Saves signal data for frontend consumption
 
-You need to add a private key to env file. This is specifically required if you want to simulate chain writes. For that to work the key should be valid and funded.
-If your workflow does not do any chain write then you can just put any dummy key as a private key. e.g.
+## Setup
+
+### 1. Configure environment
+
+Copy `.env.example` to `.env` and fill in:
+
+```bash
+CRE_ETH_PRIVATE_KEY=<your-funded-private-key>
+OPENROUTER_API_KEY=<your-openrouter-key>
+SUPABASE_URL=<your-supabase-url>
+SUPABASE_SERVICE_KEY=<your-supabase-service-key>
 ```
-CRE_ETH_PRIVATE_KEY=0000000000000000000000000000000000000000000000000000000000000001
-```
 
-## 2. Install dependencies
+### 2. Install dependencies
+
 ```bash
 bun install
 ```
 
-## 3. Simulate the workflow
-Run the command from <b>project root directory</b>
+### 3. Simulate the workflow
+
+From the project root:
 
 ```bash
-cre workflow simulate <path-to-workflow> --target=staging-settings
+cre workflow simulate ./signal-attestator -T staging-settings
 ```
 
-It is recommended to look into other existing examples to see how to write a workflow. You can generate them by running the `cre init` command.
+### 4. Run continuously (for demo)
+
+```bash
+while true; do cre workflow simulate ./signal-attestator -T staging-settings; sleep 30; done
+```
+
+## Workflow Structure
+
+- `workflow.ts` — Main workflow definition
+- `config/` — Action configs and settings
+- `staging-settings.yaml` — Staging environment configuration
+
+## Chainlink CRE Integration
+
+This workflow demonstrates:
+- External API integration (market data)
+- LLM integration (OpenRouter)
+- On-chain attestation (Base Sepolia)
+- Off-chain storage (Supabase)
+
+Part of the [Vincent](https://github.com/N-45div/Vincent) project for the Chainlink Convergence Hackathon.
