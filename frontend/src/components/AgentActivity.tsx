@@ -1,12 +1,10 @@
-import { Bot, CircleDollarSign, Activity, Clock } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Bot, CircleDollarSign, Activity, Clock, RefreshCw } from 'lucide-react'
+import { useEffect, useState, useCallback } from 'react'
+import { createClient } from '@supabase/supabase-js'
 
-type AgentPayment = {
-  id: string
-  timestamp: string
-  amount: string
-  status: 'settled' | 'pending'
-}
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null
 
 type AgentDecision = {
   asset: string
@@ -17,14 +15,44 @@ type AgentDecision = {
 
 export function AgentActivity() {
   const [isConnected, setIsConnected] = useState(false)
-  const [payments, setPayments] = useState<AgentPayment[]>([])
   const [decisions, setDecisions] = useState<AgentDecision[]>([])
-  const [totalSpent, setTotalSpent] = useState(0)
+  const [totalSignals, setTotalSignals] = useState(0)
   const [lastPing, setLastPing] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  // Simulate agent activity for demo
+  const fetchSignals = useCallback(async () => {
+    if (!supabase) return
+    
+    setLoading(true)
+    try {
+      const { data, error, count } = await supabase
+        .from('signals')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .limit(10)
+
+      if (error) throw error
+
+      if (data) {
+        const mapped: AgentDecision[] = data.map((row: { asset: string; signal: string; confidence: number; created_at: string }) => ({
+          asset: row.asset,
+          action: row.signal,
+          confidence: row.confidence,
+          timestamp: row.created_at,
+        }))
+        setDecisions(mapped)
+        setTotalSignals(count || data.length)
+      }
+      setLastPing(new Date().toLocaleTimeString())
+    } catch (err) {
+      console.error('Failed to fetch signals:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
-    // Check if agent is running by pinging the server
+    // Check if agent/server is running
     const checkAgent = async () => {
       try {
         const token = localStorage.getItem('worldIdToken')
@@ -33,34 +61,38 @@ export function AgentActivity() {
           headers: token ? { 'x-world-id-token': token } : undefined,
         })
         setIsConnected(res.status === 402 || res.status === 200)
-        setLastPing(new Date().toLocaleTimeString())
       } catch {
         setIsConnected(false)
       }
     }
 
     checkAgent()
-    const interval = setInterval(checkAgent, 10000)
+    fetchSignals()
 
-    // Simulated activity for demo purposes
-    const demoPayments: AgentPayment[] = [
-      { id: '1', timestamp: new Date(Date.now() - 60000).toISOString(), amount: '$0.01', status: 'settled' },
-      { id: '2', timestamp: new Date(Date.now() - 120000).toISOString(), amount: '$0.01', status: 'settled' },
-      { id: '3', timestamp: new Date(Date.now() - 180000).toISOString(), amount: '$0.01', status: 'settled' },
-    ]
-    
-    const demoDecisions: AgentDecision[] = [
-      { asset: 'BTC', action: 'HOLD', confidence: 30, timestamp: new Date(Date.now() - 60000).toISOString() },
-      { asset: 'ETH', action: 'HOLD', confidence: 25, timestamp: new Date(Date.now() - 90000).toISOString() },
-      { asset: 'SOL', action: 'BUY', confidence: 65, timestamp: new Date(Date.now() - 120000).toISOString() },
-    ]
+    const agentInterval = setInterval(checkAgent, 10000)
+    const signalInterval = setInterval(fetchSignals, 5000)
 
-    setPayments(demoPayments)
-    setDecisions(demoDecisions)
-    setTotalSpent(0.03)
+    // Real-time subscription
+    if (supabase) {
+      const channel = supabase
+        .channel('signals-realtime')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'signals' }, () => {
+          fetchSignals()
+        })
+        .subscribe()
 
-    return () => clearInterval(interval)
-  }, [])
+      return () => {
+        clearInterval(agentInterval)
+        clearInterval(signalInterval)
+        channel.unsubscribe()
+      }
+    }
+
+    return () => {
+      clearInterval(agentInterval)
+      clearInterval(signalInterval)
+    }
+  }, [fetchSignals])
 
   return (
     <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
@@ -92,18 +124,17 @@ export function AgentActivity() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 divide-x divide-border border-b border-border">
+      <div className="grid grid-cols-2 divide-x divide-border border-b border-border">
         <div className="p-3 text-center">
-          <div className="text-lg font-bold text-accent">{payments.length}</div>
-          <div className="text-[10px] text-text-muted uppercase tracking-wider">Payments</div>
-        </div>
-        <div className="p-3 text-center">
-          <div className="text-lg font-bold text-hold">${totalSpent.toFixed(2)}</div>
-          <div className="text-[10px] text-text-muted uppercase tracking-wider">Spent</div>
+          <div className="text-lg font-bold text-accent flex items-center justify-center gap-1">
+            {totalSignals}
+            {loading && <RefreshCw className="w-3 h-3 animate-spin text-text-muted" />}
+          </div>
+          <div className="text-[10px] text-text-muted uppercase tracking-wider">Total Signals</div>
         </div>
         <div className="p-3 text-center">
           <div className="text-lg font-bold text-text-primary">{decisions.length}</div>
-          <div className="text-[10px] text-text-muted uppercase tracking-wider">Decisions</div>
+          <div className="text-[10px] text-text-muted uppercase tracking-wider">Recent</div>
         </div>
       </div>
 
