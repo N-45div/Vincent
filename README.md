@@ -237,10 +237,3 @@ MIT
 
 **Built for [Convergence: A Chainlink Hackathon](https://hack.chain.link) — CRE & AI Track**
 
-## Links
-
-- **Hackathon:** [hack.chain.link](https://hack.chain.link)
-- **CRE Docs:** [docs.chain.link/cre](https://docs.chain.link/cre)
-- **x402 Protocol:** [x402.org](https://x402.org)
-- **Architecture:** [ARCHITECTURE.md](./ARCHITECTURE.md)
-
