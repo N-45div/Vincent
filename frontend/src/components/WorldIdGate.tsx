@@ -1,52 +1,31 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { Check, Copy, ShieldAlert, Loader2 } from 'lucide-react'
 
-const BACKEND_URL = 'http://localhost:4021'
-const RP_SIGNATURE_ENDPOINT = `${BACKEND_URL}/api/world-id/rp-signature`
-const VERIFY_ENDPOINT = `${BACKEND_URL}/api/world-id/verify`
+const VERIFY_ENDPOINT = 'http://localhost:4021/api/world-id/verify'
 
-interface RpSignature {
-  sig: string
-  nonce: string
-  created_at: number
-  expires_at: number
-  rp_id: string
-  app_id: string
-}
-
-interface IDKitResult {
-  protocol_version: string
-  nonce: string
-  action: string
-  environment: string
-  responses: Array<{
-    identifier: string
-    merkle_root: string
-    nullifier: string
-    proof: string
-    signal_hash: string
-  }>
+interface WorldIdProof {
+  merkle_root: string
+  nullifier_hash: string
+  proof: string
+  verification_level: string
 }
 
 declare global {
   interface Window {
     IDKit: {
-      request: (config: {
+      init: (config: {
         app_id: string
         action: string
-        rp_context?: {
-          rp_id: string
-          nonce: string
-          created_at: number
-          expires_at: number
-          signature: string
-        }
-        allow_legacy_proofs?: boolean
-        environment?: 'production' | 'staging'
-      }) => Promise<{
-        connectorURI: string
-        pollUntilCompletion: () => Promise<IDKitResult>
-      }>
+        signal?: string
+        verification_level?: string
+        action_description?: string
+        handleVerify?: (proof: WorldIdProof) => Promise<void>
+        onSuccess?: (proof: WorldIdProof) => void
+        onError?: (error: { code: string; message?: string }) => void
+      }) => void
+      open: () => void
+      close: () => void
+      isInitialized: boolean
     }
   }
 }
@@ -56,12 +35,10 @@ export function WorldIdGate() {
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [verifying, setVerifying] = useState(false)
-  const [qrUri, setQrUri] = useState<string | null>(null)
-  const [polling, setPolling] = useState(false)
-  const abortRef = useRef<AbortController | null>(null)
+  const [initialized, setInitialized] = useState(false)
+  const initRef = useRef(false)
 
   const appId = import.meta.env.VITE_WORLD_ID_APP_ID as string | undefined
-  const isStaging = import.meta.env.VITE_WORLD_ID_STAGING === 'true'
 
   useEffect(() => {
     const stored = localStorage.getItem('worldIdToken')
@@ -82,91 +59,63 @@ export function WorldIdGate() {
     setTimeout(() => setCopied(false), 1500)
   }
 
-  const startVerification = useCallback(async () => {
-    if (!appId) return
-    
-    setError(null)
-    setVerifying(true)
-    abortRef.current = new AbortController()
+  // Initialize IDKit Widget once
+  useEffect(() => {
+    if (!appId || initRef.current || !window.IDKit) return
+    initRef.current = true
 
-    try {
-      // Step 1: Get RP signature from backend
-      const rpRes = await fetch(RP_SIGNATURE_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'vincent-signal-access' }),
-        signal: abortRef.current.signal,
-      })
-      
-      if (!rpRes.ok) {
-        const data = await rpRes.json().catch(() => ({}))
-        throw new Error(data.error || 'Failed to get RP signature')
-      }
-      
-      const rpSig: RpSignature = await rpRes.json()
-      
-      // Step 2: Create IDKit request with RP context
-      if (!window.IDKit?.request) {
-        throw new Error('IDKit not loaded. Please refresh the page.')
-      }
+    const verifyProof = async (proof: WorldIdProof) => {
+      setVerifying(true)
+      setError(null)
 
-      const request = await window.IDKit.request({
-        app_id: appId,
-        action: 'vincent-signal-access',
-        rp_context: {
-          rp_id: rpSig.rp_id,
-          nonce: rpSig.nonce,
-          created_at: rpSig.created_at,
-          expires_at: rpSig.expires_at,
-          signature: rpSig.sig,
-        },
-        allow_legacy_proofs: true,
-        environment: isStaging ? 'staging' : 'production',
-      })
+      try {
+        const response = await fetch(VERIFY_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...proof, action: 'vincent-signal-access' }),
+        })
 
-      // Show QR code
-      setQrUri(request.connectorURI)
-      setPolling(true)
+        const data = await response.json().catch(() => null)
+        if (!response.ok) {
+          throw new Error(data?.error || 'World ID verification failed')
+        }
 
-      // Step 3: Poll for completion
-      const result = await request.pollUntilCompletion()
-      
-      setPolling(false)
-      setQrUri(null)
-
-      // Step 4: Verify proof on backend
-      const verifyRes = await fetch(VERIFY_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(result),
-        signal: abortRef.current.signal,
-      })
-
-      const verifyData = await verifyRes.json().catch(() => null)
-      if (!verifyRes.ok) {
-        throw new Error(verifyData?.error || 'World ID verification failed')
-      }
-
-      if (verifyData?.token) {
-        localStorage.setItem('worldIdToken', verifyData.token)
-        setToken(verifyData.token)
-      }
-    } catch (err: unknown) {
-      if ((err as Error).name !== 'AbortError') {
+        if (data?.token) {
+          localStorage.setItem('worldIdToken', data.token)
+          setToken(data.token)
+        }
+      } catch (err) {
         setError((err as Error).message || 'Verification failed')
+        throw err
+      } finally {
+        setVerifying(false)
       }
-    } finally {
-      setVerifying(false)
-      setPolling(false)
-      setQrUri(null)
     }
-  }, [appId, isStaging])
 
-  const cancelVerification = useCallback(() => {
-    abortRef.current?.abort()
-    setQrUri(null)
-    setPolling(false)
-    setVerifying(false)
+    window.IDKit.init({
+      app_id: appId,
+      action: 'vincent-signal-access',
+      verification_level: 'device',
+      action_description: 'Verify your World ID to access trading signals',
+      handleVerify: verifyProof,
+      onSuccess: () => {
+        console.log('World ID verification successful')
+      },
+      onError: (err) => {
+        setError(err?.message || err?.code || 'Verification failed')
+        setVerifying(false)
+      },
+    })
+    setInitialized(true)
+  }, [appId])
+
+  const openWidget = useCallback(() => {
+    if (window.IDKit?.isInitialized) {
+      setError(null)
+      window.IDKit.open()
+    } else {
+      setError('IDKit not initialized. Please refresh the page.')
+    }
   }, [])
 
   return (
@@ -189,32 +138,14 @@ export function WorldIdGate() {
             <ShieldAlert className="w-4 h-4" />
             Missing <code className="text-xs">VITE_WORLD_ID_APP_ID</code> in frontend env.
           </div>
-        ) : qrUri ? (
-          <div className="space-y-3">
-            <p className="text-sm text-text-secondary">Scan with World App or Simulator:</p>
-            <div className="bg-white p-4 rounded-lg inline-block">
-              <img 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUri)}`}
-                alt="World ID QR Code"
-                className="w-48 h-48"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              {polling && <Loader2 className="w-4 h-4 animate-spin text-accent" />}
-              <span className="text-sm text-text-muted">
-                {polling ? 'Waiting for verification...' : 'Session ready'}
-              </span>
-            </div>
-            <button
-              onClick={cancelVerification}
-              className="px-3 py-1.5 text-sm text-text-muted hover:text-text-primary border border-border rounded-lg"
-            >
-              Cancel
-            </button>
+        ) : !initialized ? (
+          <div className="flex items-center gap-2 text-sm text-text-muted">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Loading World ID...
           </div>
         ) : (
           <button
-            onClick={startVerification}
+            onClick={openWidget}
             disabled={verifying}
             className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 disabled:opacity-60 flex items-center gap-2"
           >
