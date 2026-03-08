@@ -244,12 +244,3 @@ MIT
 - **x402 Protocol:** [x402.org](https://x402.org)
 - **Architecture:** [ARCHITECTURE.md](./ARCHITECTURE.md)
 
----
-
-## License
-
-MIT
-
----
-
-**Built for [Convergence: A Chainlink Hackathon](https://hack.chain.link) — CRE & AI Track**
